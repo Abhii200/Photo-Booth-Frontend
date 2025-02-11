@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, Printer, Waves, StopCircle } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+
 interface CapturedImage {
   id: string;
   url: string;
@@ -30,7 +33,7 @@ function App() {
   const fetchImages = async () => {
     try {
       setError(null);
-      const response = await fetch('https://photo-booth-backend-1.onrender.com/images');
+      const response = await fetch(`${API_URL}/images`);
       if (!response.ok) {
         throw new Error('Server error');
       }
@@ -48,7 +51,7 @@ function App() {
       setIsCapturing(true);
       setStatus('Starting capture session...');
 
-      const response = await fetch('https://photo-booth-backend-1.onrender.com/start-capture', {
+      const response = await fetch(`${API_URL}/start-capture`, {
         method: 'POST'
       });
 
@@ -68,7 +71,7 @@ function App() {
       setError(null);
       setStatus('Stopping capture session...');
 
-      const response = await fetch('https://photo-booth-backend-1.onrender.com/stop-capture', {
+      const response = await fetch(`${API_URL}/stop-capture`, {
         method: 'POST'
       });
 
@@ -90,7 +93,7 @@ function App() {
   const pollCaptureStatus = () => {
     pollInterval = setInterval(async () => {
       try {
-        const response = await fetch('https://photo-booth-backend-1.onrender.com/capture-status');
+        const response = await fetch(`${API_URL}/capture-status`);
         if (!response.ok) throw new Error('Server error');
 
         const data: CaptureStatus = await response.json();
