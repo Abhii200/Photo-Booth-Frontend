@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Printer, Waves } from 'lucide-react';
+import { Camera, Printer, Waves, StopCircle } from 'lucide-react';
 
 interface CapturedImage {
   id: string;
@@ -30,7 +30,7 @@ function App() {
   const fetchImages = async () => {
     try {
       setError(null);
-      const response = await fetch('http://localhost:8000/images');
+      const response = await fetch('https://photo-booth-backend-1.onrender.com/images');
       if (!response.ok) {
         throw new Error('Server error');
       }
@@ -48,7 +48,7 @@ function App() {
       setIsCapturing(true);
       setStatus('Starting capture session...');
 
-      const response = await fetch('http://localhost:8000/start-capture', {
+      const response = await fetch('https://photo-booth-backend-1.onrender.com/start-capture', {
         method: 'POST'
       });
 
@@ -63,10 +63,34 @@ function App() {
     }
   };
 
+  const stopCapture = async () => {
+    try {
+      setError(null);
+      setStatus('Stopping capture session...');
+
+      const response = await fetch('https://photo-booth-backend-1.onrender.com/stop-capture', {
+        method: 'POST'
+      });
+
+      if (!response.ok) throw new Error('Failed to stop capture');
+
+      setIsCapturing(false);
+      setStatus('Capture session stopped');
+      clearInterval(pollInterval);
+    } catch (error) {
+      console.error('Error stopping capture:', error);
+      setStatus('Failed to stop capture');
+      setError('Unable to stop capture. Please make sure the backend server is running.');
+      setIsCapturing(false);
+    }
+  };
+
+  let pollInterval: NodeJS.Timeout;
+
   const pollCaptureStatus = () => {
-    const interval = setInterval(async () => {
+    pollInterval = setInterval(async () => {
       try {
-        const response = await fetch('http://localhost:8000/capture-status');
+        const response = await fetch('https://photo-booth-backend-1.onrender.com/capture-status');
         if (!response.ok) throw new Error('Server error');
 
         const data: CaptureStatus = await response.json();
@@ -75,14 +99,12 @@ function App() {
         setCurrentFrame(data.frame);
 
         if (data.status === 'captured') {
-          clearInterval(interval);
-          setIsCapturing(false);
           fetchImages();
         }
       } catch (error) {
         console.error('Error polling status:', error);
         setError('Lost connection to the photo booth server.');
-        clearInterval(interval);
+        clearInterval(pollInterval);
         setIsCapturing(false);
       }
     }, 100); // Increased polling rate for smoother video
@@ -136,6 +158,13 @@ function App() {
                     </div>
                   )}
                   <div className="text-xl">{status}</div>
+                  <button
+                    onClick={stopCapture}
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-full text-xl flex items-center justify-center gap-2 mx-auto"
+                  >
+                    <StopCircle className="w-6 h-6" />
+                    Stop Capture Session
+                  </button>
                 </div>
               ) : (
                 <button
